@@ -1,0 +1,43 @@
+name: Approve CSR Request
+
+on:
+  pull_request:
+    types: [labeled]
+
+jobs:
+  approve_csr:
+    if: contains(github.event.pull_request.labels.*.name, 'csr-request')
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Approve Pull Request
+        uses: peter-evans/approve-pull-request@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          number: ${{ github.event.pull_request.number }}
+          message: 'CSR request approved.'
+
+      - name: Add Approved Label
+        uses: actions/github-script@v6
+        with:
+          script: |
+            github.rest.issues.addLabels({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              labels: ['csr-approved']
+            })
+
+      - name: Remove Request Label
+        uses: actions/github-script@v6
+        with:
+          script: |
+            github.rest.issues.removeLabel({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              name: 'csr-request'
+            })
